@@ -1,0 +1,16 @@
+
+{
+  "name": "リアルタイム検索ビルダー",
+  "short_name": "検索ビルダー",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f3e5f5",
+  "theme_color": "#f3e5f5",
+  "icons": [
+    {
+      "src": "icon192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

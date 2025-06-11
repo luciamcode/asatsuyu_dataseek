@@ -1,0 +1,59 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>リアルタイム検索ビルダー</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon192.png">
+  <meta name="theme-color" content="#f3e5f5">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 p-4">
+  <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow">
+    <h1 class="text-2xl font-bold mb-4">🔍 リアルタイム検索ビルダー</h1>
+    <label class="block mb-2 font-semibold">キーワード:</label>
+    <input type="text" id="mainKeyword" placeholder="例: コトダマン" class="w-full border p-2 rounded mb-4">
+    <label class="block mb-2 font-semibold">除外ワード:</label>
+    <div class="grid grid-cols-2 gap-2 mb-4">
+      <label><input type="checkbox" class="exclude" value="石垢"> 石垢</label>
+      <label><input type="checkbox" class="exclude" value="tools_A"> tools_A</label>
+      <label><input type="checkbox" class="exclude" value="xfl.ag/*"> xfl.ag/*</label>
+      <label><input type="checkbox" class="exclude" value="神ってる"> 神ってる</label>
+      <label><input type="checkbox" class="exclude" value="コラボ開催決定"> コラボ開催決定</label>
+      <label><input type="checkbox" class="exclude" value="mirrativ"> mirrativ</label>
+    </div>
+    <button onclick="generateSearch()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">検索式を生成</button>
+    <div class="mt-4">
+      <label class="block mb-2 font-semibold">生成された検索式:</label>
+      <textarea id="output" class="w-full border p-2 rounded h-24"></textarea>
+    </div>
+    <div class="mt-4 flex gap-2">
+      <button onclick="copyOutput()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">コピー</button>
+      <button onclick="executeSearch()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">検索実行（Yahoo!）</button>
+    </div>
+    <div class="mt-4 text-sm text-gray-500">© 2025 Lucia's Search App</div>
+  </div>
+  <script>
+    function generateSearch() {
+      const keyword = document.getElementById('mainKeyword').value.trim();
+      const excludes = Array.from(document.querySelectorAll('.exclude:checked'))
+                            .map(e => `-"${e.value}"`).join(' ');
+      const fullQuery = `${keyword} ${excludes}`.trim();
+      document.getElementById('output').value = fullQuery;
+    }
+    function copyOutput() {
+      const output = document.getElementById('output');
+      output.select();
+      document.execCommand('copy');
+      alert('コピーしました！');
+    }
+    function executeSearch() {
+      const query = encodeURIComponent(document.getElementById('output').value);
+      const url = `https://search.yahoo.co.jp/realtime/search?p=${query}`;
+      window.open(url, '_blank');
+    }
+  </script>
+</body>
+</html>
