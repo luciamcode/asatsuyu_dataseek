@@ -1,59 +1,158 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>リアルタイム検索ビルダー</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon192.png">
-  <meta name="theme-color" content="#f3e5f5">
+  <title>検索ビルダー・カスタム版</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #f1f5f9; }
+    .tag { transition: all 0.2s; }
+    .tag:hover { transform: translateY(-1px); }
+  </style>
 </head>
-<body class="bg-gray-100 text-gray-900 p-4">
-  <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow">
-    <h1 class="text-2xl font-bold mb-4">🔍 リアルタイム検索ビルダー</h1>
-    <label class="block mb-2 font-semibold">キーワード:</label>
-    <input type="text" id="mainKeyword" placeholder="例: コトダマン" class="w-full border p-2 rounded mb-4">
-    <label class="block mb-2 font-semibold">除外ワード:</label>
-    <div class="grid grid-cols-2 gap-2 mb-4">
-      <label><input type="checkbox" class="exclude" value="石垢"> 石垢</label>
-      <label><input type="checkbox" class="exclude" value="tools_A"> tools_A</label>
-      <label><input type="checkbox" class="exclude" value="xfl.ag/*"> xfl.ag/*</label>
-      <label><input type="checkbox" class="exclude" value="神ってる"> 神ってる</label>
-      <label><input type="checkbox" class="exclude" value="コラボ開催決定"> コラボ開催決定</label>
-      <label><input type="checkbox" class="exclude" value="mirrativ"> mirrativ</label>
+<body class="p-4 sm:p-8">
+  <div class="max-w-xl mx-auto bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
+    
+    <header class="mb-6">
+      <h1 class="text-2xl font-black text-gray-800 flex items-center gap-2">
+        <span>🔍</span> 快適検索ビルダー
+      </h1>
+      <p class="text-xs text-gray-500 mt-1">除外ワードを自由にカスタマイズ＆自動保存</p>
+    </header>
+
+    <div class="mb-6">
+      <label class="block mb-2 font-bold text-gray-700 text-sm">検索キーワード</label>
+      <input type="text" id="mainKeyword" value="コトダマン" oninput="generateSearch()"
+             class="w-full border-2 border-gray-100 p-3 rounded-2xl focus:border-blue-500 outline-none transition-all font-bold">
     </div>
-    <button onclick="generateSearch()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">検索式を生成</button>
-    <div class="mt-4">
-      <label class="block mb-2 font-semibold">生成された検索式:</label>
-      <textarea id="output" class="w-full border p-2 rounded h-24"></textarea>
+
+    <div class="mb-6">
+      <label class="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl cursor-pointer border border-blue-100">
+        <input type="checkbox" id="onlyOfficial" onchange="generateSearch()" class="w-5 h-5">
+        <span class="font-bold text-blue-800 text-sm">公式アカウントのみ表示</span>
+      </label>
     </div>
-    <div class="mt-4 flex gap-2">
-      <button onclick="copyOutput()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">コピー</button>
-      <button onclick="executeSearch()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">検索実行（Yahoo!）</button>
+
+    <div class="mb-6">
+      <label class="block mb-2 font-bold text-gray-700 text-sm">除外ワード（タップでON/OFF）</label>
+      
+      <div class="flex gap-2 mb-4">
+        <input type="text" id="newWordInput" placeholder="追加したいワード..." 
+               class="flex-1 border-2 border-gray-50 p-2 rounded-xl text-sm outline-none focus:border-gray-300">
+        <button onclick="addWord()" class="bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-black">
+          追加
+        </button>
+      </div>
+
+      <div id="wordContainer" class="flex flex-wrap gap-2 min-h-[50px] p-3 bg-gray-50 rounded-2xl">
+        </div>
+      <p class="text-[10px] text-gray-400 mt-2 italic">※ 長押し(または右上の×)でリストから削除できます</p>
     </div>
-    <div class="mt-4 text-sm text-gray-500">© 2025 Lucia's Search App</div>
+
+    <div class="mt-8 border-t pt-6">
+      <textarea id="output" readonly
+                class="w-full border-none bg-gray-100 p-4 rounded-2xl h-24 text-xs text-gray-500 mb-4 focus:outline-none italic"></textarea>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="copyOutput()" class="bg-white border-2 border-gray-200 py-4 rounded-2xl font-bold text-sm hover:bg-gray-50 transition-all">
+          📋 コピー
+        </button>
+        <button onclick="executeSearch()" class="bg-blue-600 text-white py-4 rounded-2xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 text-center">
+          🚀 Yahoo!検索
+        </button>
+      </div>
+    </div>
+
   </div>
+
   <script>
+    // デフォルトのワードリスト
+    const defaultWords = ["無限福召喚チケット", "xfl.ag", "石垢", "買取", "販売", "mirrativ", "実績"];
+    
+    // 状態管理：{text: string, enabled: boolean}
+    let excludeList = JSON.parse(localStorage.getItem('myExcludeList')) || 
+                      defaultWords.map(w => ({text: w, enabled: true}));
+
+    // 表示の更新
+    function renderWords() {
+      const container = document.getElementById('wordContainer');
+      container.innerHTML = '';
+      
+      excludeList.forEach((item, index) => {
+        const span = document.createElement('div');
+        span.className = `tag flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-bold cursor-pointer select-none
+          ${item.enabled ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-400 border-gray-200'}`;
+        
+        // クリックでON/OFF
+        span.onclick = () => toggleWord(index);
+        
+        span.innerHTML = `
+          <span>${item.text}</span>
+          <span onclick="event.stopPropagation(); removeWord(${index});" class="ml-1 hover:text-red-300">×</span>
+        `;
+        container.appendChild(span);
+      });
+      
+      saveAndGenerate();
+    }
+
+    // ON/OFF切り替え
+    function toggleWord(index) {
+      excludeList[index].enabled = !excludeList[index].enabled;
+      renderWords();
+    }
+
+    // ワード追加
+    function addWord() {
+      const input = document.getElementById('newWordInput');
+      const val = input.value.trim();
+      if (val) {
+        excludeList.push({text: val, enabled: true});
+        input.value = '';
+        renderWords();
+      }
+    }
+
+    // ワード削除
+    function removeWord(index) {
+      excludeList.splice(index, 1);
+      renderWords();
+    }
+
+    // 保存と検索式生成
+    function saveAndGenerate() {
+      localStorage.setItem('myExcludeList', JSON.stringify(excludeList));
+      generateSearch();
+    }
+
     function generateSearch() {
       const keyword = document.getElementById('mainKeyword').value.trim();
-      const excludes = Array.from(document.querySelectorAll('.exclude:checked'))
-                            .map(e => `-"${e.value}"`).join(' ');
-      const fullQuery = `${keyword} ${excludes}`.trim();
+      const onlyOfficial = document.getElementById('onlyOfficial').checked;
+      
+      const excludes = excludeList
+        .filter(item => item.enabled)
+        .map(item => `-"${item.text}"`)
+        .join(' ');
+      
+      let officialTag = onlyOfficial ? "from:kotodaman_pr" : "";
+      const fullQuery = `${keyword} ${officialTag} ${excludes}`.replace(/\s+/g, ' ').trim();
       document.getElementById('output').value = fullQuery;
     }
+
     function copyOutput() {
       const output = document.getElementById('output');
-      output.select();
-      document.execCommand('copy');
+      navigator.clipboard.writeText(output.value);
       alert('コピーしました！');
     }
+
     function executeSearch() {
       const query = encodeURIComponent(document.getElementById('output').value);
-      const url = `https://search.yahoo.co.jp/realtime/search?p=${query}`;
-      window.open(url, '_blank');
+      window.open(`https://search.yahoo.co.jp/realtime/search?p=${query}`, '_blank');
     }
+
+    // 初期起動
+    renderWords();
   </script>
 </body>
 </html>
